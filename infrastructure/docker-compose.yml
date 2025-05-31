@@ -11,6 +11,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.0.0
@@ -25,8 +26,11 @@ services:
       - zookeeper
     environment:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
     ports:
       - "9092:9092"
 
@@ -55,6 +59,8 @@ services:
     ports:
       - "8080:8080"
     volumes:
+      - ../data_ingestion:/app/data_ingestion
+      - ../utils:/app/utils
       - ../batch_processing:/app
       - ../configs:/configs
 
@@ -83,6 +89,9 @@ services:
       - kafka
       - postgres
       - minio
+    volumes:
+      - ../data_ingestion:/app/data_ingestion        # скрипты извлечения/загрузки
+      - ../utils:/app/utils
 
 volumes:
   postgres_data:
