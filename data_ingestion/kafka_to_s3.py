@@ -50,13 +50,14 @@ def start_streaming():
 
     # 2. Определяем схему JSON-сообщений, которые приходят из Kafka
     purchase_schema = StructType([
-        StructField("customer_id", IntegerType(), False),
-        StructField("product_id", IntegerType(), False),
-        StructField("seller_id", IntegerType(), False),
-        StructField("quantity", IntegerType(), False),
-        StructField("price_at_time", DoubleType(), False),
-        StructField("purchased_at", TimestampType(), False)
+        StructField("customer_id", IntegerType(), True),
+        StructField("product_id", IntegerType(), True),
+        StructField("seller_id", IntegerType(), True),
+        StructField("quantity", IntegerType(), True),
+        StructField("price_at_time", DoubleType(), True),
+        StructField("purchased_at", TimestampType(), True)
     ])
+
 
     # 3. Читаем данные из Kafka (топик purchases), начиная с последнего оффсета
     kafka_bootstrap = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092")
@@ -65,14 +66,14 @@ def start_streaming():
         .format("kafka") \
         .option("kafka.bootstrap.servers", kafka_bootstrap) \
         .option("subscribe", kafka_topic) \
-        .option("startingOffsets", "latest") \
+        .option("startingOffsets", "earliest") \
         .load()
 
     # 4. Преобразуем поле value (bytes) в строку, затем в поля по схеме
     df_parsed = df_raw.selectExpr("CAST(value AS STRING) as json_str") \
         .select(from_json(col("json_str"), purchase_schema).alias("data")) \
         .select("data.*")
-
+    
     # 5. Добавляем колонку purchase_date для партиционирования
     df_with_date = df_parsed.withColumn("purchase_date", to_date(col("purchased_at")))
 
@@ -89,8 +90,13 @@ def start_streaming():
         .outputMode("append") \
         .start()
 
-    query.awaitTermination()
-
+    try:
+        query.awaitTermination()
+    except KeyboardInterrupt:
+        print("Stopping streaming gracefully...")
+        query.stop()
+    finally:
+        spark.stop()
 
 if __name__ == "__main__":
     start_streaming()

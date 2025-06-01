@@ -112,7 +112,7 @@ def validate_parquet(bucket_name: str, object_name: str) -> bool:
 # Ожидаемые колонки для каждой категории данных
 EXPECTED_COLUMNS = {
     "customers/": {"customer_id", "first_name", "last_name", "email", "created_at"},
-    "purchases/": {"purchase_id", "customer_id", "product_id", "quantity", "purchase_timestamp"},
+    "purchases/": {"customer_id", "product_id", "seller_id", "quantity","price_at_time", "purchased_at"},
     "products/":  {"product_id", "product_name", "category", "price", "stock_quantity"},
 }
 

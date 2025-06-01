@@ -1,3 +1,6 @@
+
+docker-compose -f infrastructure/docker-compose.yml up --build -d
+
 #для postgres
 
 docker-compose -f infrastructure/docker-compose.yml exec api bash
@@ -6,7 +9,7 @@ export PYTHONPATH=/app
 
 python data_ingestion/postgres_to_s3.py
 
-
+exit
 
 #для kafka
 
@@ -16,9 +19,16 @@ kafka-topics --create  --topic purchases --bootstrap-server localhost:9092 --par
 
 kafka-topics --describe --topic purchases --bootstrap-server localhost:9092
 
-echo '{"purchase_id":1,"customer_id":1,"product_id":100,"quantity":2,"purchase_timestamp":"2025-05-31T23:59:00"}' | kafka-console-producer --topic purchases --bootstrap-server localhost:9092
+echo '{"customer_id": 123, "product_id": 456, "seller_id": 789, "quantity": 3, "price_at_time": 29.99, "purchased_at": "2025-05-31T15:30:00"}' | kafka-console-producer --topic purchases --bootstrap-server localhost:9092
 
-kafka-console-consumer --topic purchases  --bootstrap-server localhost:9092  --from-beginning --max-messages 1
+echo '{"customer_id": 42, "product_id": 101, "seller_id": 55, "quantity": 1, "price_at_time": 149.99, "purchased_at": "2025-05-31T18:45:22"}' | kafka-console-producer --topic purchases --bootstrap-server localhost:9092
+
+echo '{"customer_id": 7, "product_id": 2048, "seller_id": 16, "quantity": 5, "price_at_time": 9.99, "purchased_at": "2025-05-31T22:10:37"}' | kafka-console-producer --topic purchases --bootstrap-server localhost:9092
+
+
+kafka-console-consumer --topic purchases  --bootstrap-server localhost:9092  --from-beginning --max-messages 3
+
+exit
 
 #для spark
 
@@ -30,7 +40,7 @@ export PYTHONPATH=/app
 
 spark-submit --packages org.apache.hadoop:hadoop-aws:3.3.4,org.apache.spark:spark-sql-kafka-0-10_2.12:3.4.3  /app/data_ingestion/kafka_to_s3.py
 
-
+exit
 
 #для загрузки файла в s3(паркеты)
 
@@ -40,9 +50,9 @@ export PYTHONPATH=/app
 
 python /app/data_ingestion/upload_to_s3.py /app/data_ingestion/products.parquet
 
+exit
 
-
-#создание сырого слоя
+#создание стейдж слоя
 
 docker-compose -f infrastructure/docker-compose.yml exec api bash
 
@@ -50,4 +60,5 @@ export PYTHONPATH=/app
 
 python /app/data_ingestion/s3_stage_loader.py
 
+exit
 
