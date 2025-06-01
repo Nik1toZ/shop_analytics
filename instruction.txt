@@ -1,0 +1,38 @@
+#для postgres
+
+docker-compose -f infrastructure/docker-compose.yml exec api bash
+
+export PYTHONPATH=/app
+
+python data_ingestion/postgres_to_s3.py
+
+#для kafka
+
+docker-compose -f infrastructure/docker-compose.yml exec kafka bash
+
+kafka-topics --create  --topic purchases --bootstrap-server localhost:9092 --partitions 1  --replication-factor 1 --if-not-exists
+
+kafka-topics --describe --topic purchases --bootstrap-server localhost:9092
+
+echo '{"purchase_id":1,"customer_id":1,"product_id":100,"quantity":2,"purchase_timestamp":"2025-05-31T23:59:00"}' | kafka-console-producer --topic purchases --bootstrap-server localhost:9092
+
+kafka-console-consumer --topic purchases  --bootstrap-server localhost:9092  --from-beginning --max-messages 1
+
+#для spark
+
+docker-compose -f infrastructure/docker-compose.yml exec spark-master bash
+
+pip install minio
+
+export PYTHONPATH=/app
+
+spark-submit --packages org.apache.hadoop:hadoop-aws:3.3.4,org.apache.spark:spark-sql-kafka-0-10_2.12:3.4.3  /app/data_ingestion/kafka_to_s3.py
+
+#для загрузки файла в s3(паркеты)
+
+docker-compose -f infrastructure/docker-compose.yml exec api bash
+
+export PYTHONPATH=/app
+
+python /app/data_ingestion/upload_to_s3.py /app/data_ingestion/products.parquet
+
