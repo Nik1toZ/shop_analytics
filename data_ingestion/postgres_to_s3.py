@@ -67,7 +67,7 @@ def export_customers():
 
         # 8) Сериализуем DF в Parquet в памяти
         buffer = io.BytesIO()
-        df.to_parquet(buffer, index=False)
+        df.to_parquet(buffer, index=False, engine="pyarrow", coerce_timestamps="ms")
         buffer.seek(0)
 
         buckets = [b.name for b in s3.list_buckets()]
